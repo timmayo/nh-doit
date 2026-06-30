@@ -1,0 +1,23 @@
+# Credentials and secrets
+*.secret
+*.key
+*.pfx
+*.cer
+*.env
+config.json
+
+# PowerShell
+*.ps1xml
+
+# OS
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# Editor
+.vscode/
+*.code-workspace
+
+# PAC CLI auth profiles (never commit these)
+**/authprofile*.json
+**/.pac/
