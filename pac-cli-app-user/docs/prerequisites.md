@@ -164,13 +164,10 @@ Never hardcode Client ID, Client Secret, Tenant ID, or webhook URLs directly in 
 |---|---|---|
 | Webhook URL | `nh_WebhookUrl` | Secret |
 | SPN Client Secret | `nh_SpnClientSecret` | Secret |
-| SPN App ID | `nh_SpnAppId` | Text |
+| SPN App ID | `nh_SpnAppId` | Secret |
 
 **Retrieving Secret-type variables:**
 Dataverse connector → **Perform an unbound action** → Action Name `RetrieveEnvironmentVariableSecretValue`, passing the schema name as `EnvironmentVariableName`. This requires Section 0 (resource provider registration) and Section 2 (Key Vault access for the Dataverse service principal) to already be in place.
-
-**Retrieving Text-type variables:**
-Use a standard Dataverse **List rows** / Get Environment Variable Current Value lookup — the secret-retrieval action is only needed for Secret-type variables.
 
 **Additional steps:**
 - Enable **Secure Inputs/Outputs** (action Settings tab) on any HTTP action that references a secret, even indirectly, so values don't appear in run history.
