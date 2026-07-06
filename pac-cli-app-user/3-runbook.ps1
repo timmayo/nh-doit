@@ -22,6 +22,9 @@
       - pac auth create requires --cloud UsGov
       - Azure Automation native connector is NOT supported in GCC;
         trigger this runbook via HTTP webhook from Power Automate
+
+    PAC CLI is installed at runtime via dotnet tool install.
+    For production use, consider a Hybrid Runbook Worker with PAC CLI pre-installed.
 #>
 
 param(
@@ -51,6 +54,10 @@ function Write-Log {
 # REGION: Main
 # ------------------------------------------------------------------
 
+# Authenticate using managed identity
+Write-Log "Authenticating with managed identity..." INFO
+Connect-AzAccount -Identity
+
 # Load values from Automation Account variables
 $tenantId           = Get-AutomationVariable -Name 'TenantId'
 $appId              = Get-AutomationVariable -Name 'AppId'
@@ -68,6 +75,18 @@ try {
     Write-Log "Failed to retrieve secret from Key Vault: $_" ERROR
     throw
 }
+
+# Install .NET 10
+Write-Log "Installing .NET 10..." INFO
+Invoke-WebRequest -Uri https://dot.net/v1/dotnet-install.ps1 -OutFile dotnet-install.ps1
+./dotnet-install.ps1 -Channel 10.0 -InstallDir "$env:LOCALAPPDATA\Microsoft\dotnet"
+$env:DOTNET_ROOT = "$env:LOCALAPPDATA\Microsoft\dotnet"
+$env:PATH = "$env:DOTNET_ROOT;$env:DOTNET_ROOT\tools;$env:PATH"
+
+# Install PAC CLI
+Write-Log "Installing PAC CLI..." INFO
+dotnet tool install --global Microsoft.PowerApps.CLI.Tool
+$env:PATH = "$env:USERPROFILE\.dotnet\tools;$env:PATH"
 
 # Authenticate pac CLI as the SPN
 Write-Log "Authenticating pac CLI as SPN..." INFO
