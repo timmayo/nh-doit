@@ -37,9 +37,13 @@ A Power Automate flow triggers an Azure Automation Runbook via HTTP webhook. The
 
    | Environment Variable | Type | Value |
    |---|---|---|
-   | `nh_SpnAppId` | Secret | SPN application (client) ID |
-   | `nh_SpnClientSecret` | Secret | SPN client secret (Key Vault reference) |
+   | `nh_ClientId` | Secret | SPN application (client) ID |
+   | `nh_ClientSecret` | Secret | SPN client secret (Key Vault reference) |
    | `nh_WebhookUrl` | Secret | Webhook URL generated in Step 4 (Key Vault reference) |
+   | `nh_TenantId` | Secret | Entra tenant ID |
+   | `nh_SubscriptionId` | Secret | Azure subscription ID |
+   | `nh_ResourceGroup` | Secret | Azure resource group name |
+   | `nh_AutomationAccount` | Secret | Azure Automation Account name |
 
 7. Test the Power Automate flow using the manual trigger
 
