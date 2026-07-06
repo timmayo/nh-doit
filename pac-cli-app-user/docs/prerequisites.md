@@ -8,14 +8,28 @@ This document describes everything that must be in place before the runbook and 
 
 The runbook is triggered by a Power Automate flow via an HTTP webhook. When triggered, it authenticates to Power Platform as a service principal (SPN) and adds an Application User to one or more Dataverse environments automatically. The flow then polls the runbook job status and retrieves its output.
 
+**Setup (one-time, done before the flow ever runs):**
+
+```mermaid
+flowchart TD
+    A[Register SPN as Power Platform<br/>management application] --> B[Add SPN as Dataverse<br/>Application User per environment]
+    B --> C[Create Azure Automation Account<br/>+ system-assigned managed identity]
+    C --> D[Grant Key Vault access:<br/>managed identity, Dataverse SP, your user]
+    D --> E[Create Runbook<br/>+ generate Webhook URL]
+    E --> F[Store secrets as Dataverse<br/>environment variables]
 ```
-Power Automate (GCC moderate)
-  → HTTP action → POST to Azure Automation webhook
-    → PowerShell Runbook
-      → Authenticates to Power Platform as SPN
-        → Adds Application User + assigns security role per environment
-  → Poll job status via Azure Resource Manager (ARM) REST API
-  → Retrieve job output
+
+**The Power Automate flow itself:**
+
+```mermaid
+flowchart TD
+    A[Manual trigger] --> B[Get Webhook URL<br/>from environment variable]
+    B --> C[HTTP POST to webhook<br/>→ triggers Runbook]
+    C --> D[Get access token<br/>commercial Entra ID]
+    D --> E[Get job status<br/>via ARM REST API]
+    E --> F{Status =<br/>Completed?}
+    F -->|No, wait & retry| E
+    F -->|Yes| G[Get job output<br/>via ARM REST API]
 ```
 
 > **Cloud clarification:** This customer's GCC tenant is **GCC (moderate)**, not GCC High or DoD. GCC moderate runs on **commercial Entra ID and ARM endpoints** (`login.microsoftonline.com`, `management.azure.com`) — not `.us` gov endpoints. However, PAC CLI and Power Platform Admin PowerShell still target GCC-specific Power Platform/Dataverse endpoints (`--cloud UsGov`, `-Endpoint usgov`, `.crm9.dynamics.com`). Do not assume these two things use the same cloud designation — verify which layer (Entra/ARM vs. Power Platform/Dataverse) you're authenticating to before picking an endpoint.
