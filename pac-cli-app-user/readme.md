@@ -1,6 +1,6 @@
 # PAC CLI App User Automation
 
-Automates adding a Dataverse Application User to one or more GCC environments via an Azure Automation Runbook triggered by Power Automate.
+This pattern lets Power Platform Admins run PowerShell or PAC CLI scripts in the cloud on demand, without needing to run them manually from their own machine.
 
 ---
 
@@ -16,7 +16,7 @@ A Power Automate flow triggers an Azure Automation Runbook via HTTP webhook. The
 |---|---|
 | `1-register-management-app.ps1` | One-time setup. Registers the SPN as a Power Platform management application. Run interactively as a Power Platform Administrator. |
 | `2-add-app-user.ps1` | One-time setup. Adds the SPN as a Dataverse Application User in each target environment. Run interactively as a Power Platform Administrator. |
-| `3-runbook.ps1` | Paste this into the Azure Automation Runbook. |
+| `3-runbook.ps1` | Paste this into the Azure Automation Runbook. Just a basic example that connects to a tenant and lists all the PowerPlatform environments. |
 | `docs/prerequisites.md` | Azure Automation Account setup instructions, IAM role assignments, and architecture diagrams. |
 | `solution/src/` | Unpacked solution source (via `pac solution unpack`). Version controlled. |
 | `solution/releases/NHDoIT_1_0_0_1_managed.zip` | Managed solution package for import into the customer's environment. |
@@ -31,8 +31,8 @@ A Power Automate flow triggers an Azure Automation Runbook via HTTP webhook. The
 3. Run `2-add-app-user.ps1`
 4. Create the Azure Automation Runbook, paste in `3-runbook.ps1`, and generate the webhook
 5. Import the solution into the target Power Platform environment:
-   - Use `NHDoIT_1_0_0_1_managed.zip` for the customer's environment
-   - Use `NHDoIT_1_0_0_1_unmanaged.zip` for development/customization
+   - Use `NHDoIT_1_0_0_x_managed.zip` for the customer's environment
+   - Use `NHDoIT_1_0_0_x_unmanaged.zip` for development/customization
 6. Set the solution's environment variable values:
 
    | Environment Variable | Type | Value |

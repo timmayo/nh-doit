@@ -40,7 +40,7 @@ flowchart TD
 
 Before creating any Secret-type environment variable in Power Platform, register the `Microsoft.PowerPlatform` resource provider on the Azure subscription that hosts the Key Vault.
 
-1. Azure portal → your subscription → **Resource providers**
+1. Azure portal → your subscription → Settings → **Resource providers**
 2. Search for `Microsoft.PowerPlatform`
 3. If status is not **Registered**, select it and click **Register**
 
