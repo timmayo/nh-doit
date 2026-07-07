@@ -72,6 +72,8 @@ Create an Azure Automation Account in the Resource Group created above.
 | Region | Same as the Resource Group |
 | Managed Identity | System-assigned (required) |
 
+Name it following your naming convention (e.g. `aa-nh-doit`).
+
 ---
 
 ## 3. Key Vault Access — Three Separate Grants Required
