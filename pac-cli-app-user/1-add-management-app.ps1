@@ -23,6 +23,11 @@ $ErrorActionPreference = 'Stop'
 $ScriptDir  = $PSScriptRoot
 $ConfigPath = Join-Path $ScriptDir 'config.json'
 
+function Test-IsGuid {
+    param([string]$Value)
+    return $Value -match '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+}
+
 function Get-Config {
     $defaults = [ordered]@{
         TenantId = ''
@@ -32,8 +37,8 @@ function Get-Config {
     # Load existing config if present
     if (Test-Path $ConfigPath) {
         $loaded = Get-Content $ConfigPath -Raw | ConvertFrom-Json
-        foreach ($key in $defaults.Keys) {
-            if ($null -ne $loaded.$key -and $loaded.$key -ne '') {
+        foreach ($key in @($defaults.Keys)) {
+            if ($loaded.PSObject.Properties.Name -contains $key -and $null -ne $loaded.$key -and (Test-IsGuid $loaded.$key)) {
                 $defaults[$key] = $loaded.$key
             }
         }
@@ -41,7 +46,7 @@ function Get-Config {
 
     # Prompt for any missing values
     $prompted = $false
-    foreach ($key in $defaults.Keys) {
+    foreach ($key in @($defaults.Keys)) {
         if (-not $defaults[$key]) {
             $defaults[$key] = Read-Host "Enter $key"
             $prompted = $true
@@ -55,7 +60,7 @@ function Get-Config {
             Get-Content $ConfigPath -Raw | ConvertFrom-Json -AsHashtable
         } else { @{} }
 
-        foreach ($key in $defaults.Keys) {
+        foreach ($key in @($defaults.Keys)) {
             $existing[$key] = $defaults[$key]
         }
 

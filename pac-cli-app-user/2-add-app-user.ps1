@@ -17,7 +17,7 @@
     
     Prerequisites:
       - SPN registered as a Power Platform management application
-        (see 1-register-management-app.ps1)
+        (see 1-add-management-app.ps1)
       - pac CLI installed
 #>
 
@@ -35,15 +35,15 @@ function Get-Config {
     $defaults = [ordered]@{
         TenantId        = ''
         AppId           = ''
-        SpnCredential   = ''
+        ClientSecret   = ''
         EnvironmentUrls = @()
     }
 
     # Load existing config if present
     if (Test-Path $ConfigPath) {
         $loaded = Get-Content $ConfigPath -Raw | ConvertFrom-Json
-        foreach ($key in $defaults.Keys) {
-            if ($null -ne $loaded.$key -and $loaded.$key -ne '') {
+        foreach ($key in @($defaults.Keys)) {
+            if ($loaded.PSObject.Properties.Name -contains $key -and $null -ne $loaded.$key -and $loaded.$key -ne '') {
                 $defaults[$key] = $loaded.$key
             }
         }
@@ -59,8 +59,8 @@ function Get-Config {
     }
 
     # Always prompt for SPN credential - never persist to disk
-    $secure = Read-Host "Enter SPN credential" -AsSecureString
-    $defaults['SpnCredential'] = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
+    $secure = Read-Host "Enter ClientSecret" -AsSecureString
+    $defaults['ClientSecret'] = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
         [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
     )
 
@@ -75,20 +75,24 @@ function Get-Config {
         $prompted = $true
     }
 
-    # Save back if anything was prompted - never save SPN credential
+    # Save back if anything was prompted - never save ClientSecret
     if ($prompted) {
-        $existing = if (Test-Path $ConfigPath) {
-            Get-Content $ConfigPath -Raw | ConvertFrom-Json -AsHashtable
-        } else { @{} }
+        $existing = @{}
+        if (Test-Path $ConfigPath) {
+            $loadedExisting = Get-Content $ConfigPath -Raw | ConvertFrom-Json
+            foreach ($prop in $loadedExisting.PSObject.Properties) {
+                $existing[$prop.Name] = $prop.Value
+            }
+        }
 
-        foreach ($key in $defaults.Keys) {
-            if ($key -ne 'SpnCredential') {
+        foreach ($key in @($defaults.Keys)) {
+            if ($key -ne 'ClientSecret') {
                 $existing[$key] = $defaults[$key]
             }
         }
 
         $existing | ConvertTo-Json -Depth 3 | Set-Content $ConfigPath
-        Write-Host "Configuration saved to config.json (SPN credential not saved)" -ForegroundColor Green
+        Write-Host "Configuration saved to config.json (ClientSecret not saved)" -ForegroundColor Green
     }
 
     return $defaults
@@ -101,7 +105,7 @@ function Get-Config {
 $config          = Get-Config
 $tenantId        = $config.TenantId
 $appId           = $config.AppId
-$spnCredential   = $config.SpnCredential
+$spnCredential   = $config.ClientSecret
 $environmentUrls = $config.EnvironmentUrls
 $securityRole    = "System Administrator"
 
