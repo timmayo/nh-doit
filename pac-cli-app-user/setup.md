@@ -236,16 +236,6 @@ The flow must call the webhook using the **HTTP** action (not the Azure Automati
 
 ---
 
-## 15. Do Until Loop Logic (Job Status Polling)
-
-If polling for job completion, the **Loop until** condition must be:
-
-`JobStatus` **is equal to** `Completed`
-
-Not "is not equal to" — a Do Until loop runs until the condition becomes **true**, so an incorrect operator here causes the loop to exit after a single iteration without actually waiting for the job to finish.
-
----
-
 ## Summary Checklist
 
 - [ ] SPN registered as Power Platform management application (`1-add-management-app.ps1`)
