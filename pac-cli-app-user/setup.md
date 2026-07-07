@@ -38,7 +38,7 @@ flowchart TD
 
 ## 1. Register the SPN as a Power Platform Management Application
 
-Run `1-register-management-app.ps1` interactively, signed in as a human Power Platform Administrator. This is a one-time step and cannot be run by the SPN itself.
+Run `1-add-management-app.ps1` interactively, signed in as a human Power Platform Administrator. This is a one-time step and cannot be run by the SPN itself.
 
 ---
 
@@ -230,7 +230,7 @@ Not "is not equal to" — a Do Until loop runs until the condition becomes **tru
 
 ## Summary Checklist
 
-- [ ] SPN registered as Power Platform management application (`1-register-management-app.ps1`)
+- [ ] SPN registered as Power Platform management application (`1-add-management-app.ps1`)
 - [ ] SPN added as Dataverse Application User in each target environment (`2-add-app-user.ps1`)
 - [ ] Resource Group created
 - [ ] Azure Automation Account created (PowerShell 7.2, system-assigned managed identity)
