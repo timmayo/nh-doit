@@ -173,7 +173,7 @@ Without this, polling fails with: `does not have authorization to perform action
 
 Before creating any Secret-type environment variable in Power Platform, register the `Microsoft.PowerPlatform` resource provider on the Azure subscription that hosts the Key Vault.
 
-1. Azure portal → your subscription → **Resource providers**
+1. Azure portal → your subscription → **Settings → Resource providers**
 2. Search for `Microsoft.PowerPlatform`
 3. If status is not **Registered**, select it and click **Register**
 
@@ -186,6 +186,8 @@ Also confirm the Key Vault's networking allows access:
 ---
 
 ## 12. Secrets in Power Automate Flows
+
+> **Prerequisite:** The solution must already be imported into the target Power Platform environment (see the main [`README.md`](./README.md) Run Order) before these environment variables can be created or referenced.
 
 Never hardcode Client ID, Client Secret, Tenant ID, or webhook URLs directly in flow actions. Use Dataverse environment variables instead.
 
