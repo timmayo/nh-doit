@@ -130,6 +130,8 @@ The client secret itself is never stored as an Automation variable — it is ret
 
 ## 8. PAC CLI in the Runbook
 
+> **Informational only — no action required.** This section explains how the runbook handles PAC CLI at runtime; there is nothing to configure here.
+
 PAC CLI is a standalone executable, not a PowerShell module, and is not available in the Azure Automation sandbox by default. The runbook installs it at runtime:
 
 1. Installs .NET 10 via `dotnet-install.ps1`
@@ -149,7 +151,7 @@ If the Power Automate flow polls the runbook's job status/output via the ARM RES
 |---|---|
 | Role | Automation Job Operator |
 | Assign access to | Service principal |
-| Member | the SPN |
+| Member | the SPN (search by app name or Client ID) |
 
 Without this, polling fails with: `does not have authorization to perform action 'Microsoft.Automation/automationAccounts/jobs/read'`.
 
