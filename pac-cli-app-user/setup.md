@@ -74,13 +74,13 @@ Name it following your naming convention (e.g. `aa-nh-doit`).
 
 ## 5. Key Vault Access — Three Separate Grants Required
 
-A single Key Vault is used to store the SPN client secret. Three different identities need access to it, and each is granted separately. Missing any one of these produces a different failure at a different stage, so confirm all three.
+Create a Key Vault using your naming convention (e.g. `kv-nh-doit`) to store the SPN client secret. Three different identities need access to it, and each is granted separately. Missing any one of these produces a different failure at a different stage, so confirm all three.
 
 | Who needs access | Role | Where to grant it |
 |---|---|---|
 | Automation Account's system-assigned managed identity | Key Vault Secrets User | Key Vault → Access control (IAM) |
 | Dataverse service principal (appears as "Dataverse" — search by name, not App ID, as the App ID differs by tenant/cloud) | Key Vault Secrets User | Key Vault → Access control (IAM) |
-| Your own user account (to create the environment variable in the maker portal) | Key Vault Secrets User | Key Vault → Access control (IAM) |
+| Your own user account (to create the environment variable in the Azure portal & Maker portals) | Key Vault Administrator | Key Vault → Access control (IAM) |
 
 **Finding the Automation Account's managed identity:**
 Automation Account → **Identity → System assigned** → copy the Object (principal) ID.
@@ -92,7 +92,9 @@ In the role assignment "Select members" search box, search **"Dataverse"**. Do n
 
 ## 6. Required PowerShell Modules (Automation Account)
 
-Install these modules in the Automation Account under **Modules → Add a module → Browse the gallery**:
+Install these modules in the Automation Account under **Shared Resources → Modules → Add a module → Browse the gallery**:
+
+> When adding each module, set **Runtime version** to **7.2** to match the runbook's runtime.
 
 | Module | Purpose |
 |---|---|
