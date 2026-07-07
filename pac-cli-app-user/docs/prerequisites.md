@@ -40,7 +40,7 @@ flowchart TD
 
 Before creating any Secret-type environment variable in Power Platform, register the `Microsoft.PowerPlatform` resource provider on the Azure subscription that hosts the Key Vault.
 
-1. Azure portal → your subscription → Settings → **Resource providers**
+1. Azure portal → your subscription → **Resource providers**
 2. Search for `Microsoft.PowerPlatform`
 3. If status is not **Registered**, select it and click **Register**
 
@@ -52,19 +52,29 @@ Also confirm the Key Vault's networking allows access:
 
 ---
 
-## 1. Azure Automation Account
+## 1. Resource Group
 
-Create an Azure Automation Account in your Azure subscription.
+Create (or identify) an Azure Resource Group to contain the Automation Account and Key Vault used by this solution.
+
+1. Azure portal → **Resource groups** → **Create**
+2. Choose the subscription and a region (any commercial Azure region — GCC moderate does not require a GovCloud subscription)
+3. Name it following your naming convention (e.g. `rg-nh-doit`)
+
+---
+
+## 2. Azure Automation Account
+
+Create an Azure Automation Account in the Resource Group created above.
 
 | Setting | Value |
 |---|---|
 | Runtime version | PowerShell 7.2 |
-| Region | Any commercial Azure region (GCC moderate does not require a GovCloud subscription) |
+| Region | Same as the Resource Group |
 | Managed Identity | System-assigned (required) |
 
 ---
 
-## 2. Key Vault Access — Three Separate Grants Required
+## 3. Key Vault Access — Three Separate Grants Required
 
 A single Key Vault is used to store the SPN client secret. Three different identities need access to it, and each is granted separately. Missing any one of these produces a different failure at a different stage, so confirm all three.
 
@@ -82,19 +92,19 @@ In the role assignment "Select members" search box, search **"Dataverse"**. Do n
 
 ---
 
-## 3. Required PowerShell Modules (Automation Account)
+## 4. Required PowerShell Modules (Automation Account)
 
 Install these modules in the Automation Account under **Modules → Add a module → Browse the gallery**:
 
 | Module | Purpose |
 |---|---|
-| `Microsoft.PowerApps.Administration.PowerShell` | Registering the management application; PAC CLI is a separate executable (see Section 6) |
+| `Microsoft.PowerApps.Administration.PowerShell` | Registering the management application; PAC CLI is a separate executable (see Section 7) |
 | `Az.Accounts` | `Connect-AzAccount -Identity` for managed identity auth |
 | `Az.KeyVault` | `Get-AzKeyVaultSecret` |
 
 ---
 
-## 4. Automation Account Variables
+## 5. Automation Account Variables
 
 Create the following under **Shared Resources → Variables**:
 
@@ -109,7 +119,7 @@ The client secret itself is never stored as an Automation variable — it is ret
 
 ---
 
-## 5. SPN Prerequisites (Power Platform side)
+## 6. SPN Prerequisites (Power Platform side)
 
 | Prerequisite | Script | Who runs it |
 |---|---|---|
@@ -120,7 +130,7 @@ Both scripts use `Add-PowerAppsAccount -Endpoint usgov` and `pac auth create --c
 
 ---
 
-## 6. PAC CLI in the Runbook
+## 7. PAC CLI in the Runbook
 
 PAC CLI is a standalone executable, not a PowerShell module, and is not available in the Azure Automation sandbox by default. The runbook installs it at runtime:
 
@@ -131,7 +141,7 @@ This adds roughly 1–2 minutes to each runbook execution. For frequent or produ
 
 ---
 
-## 7. SPN Role Assignment on the Automation Account (for job status polling)
+## 8. SPN Role Assignment on the Automation Account (for job status polling)
 
 If the Power Automate flow polls the runbook's job status/output via the ARM REST API (rather than only firing the webhook and walking away), the SPN needs an RBAC role on the Automation Account itself — this is separate from anything configured in Power Platform or Key Vault.
 
@@ -147,16 +157,16 @@ Without this, polling fails with: `does not have authorization to perform action
 
 ---
 
-## 8. Webhook
+## 9. Webhook
 
 1. Runbook → **Webhooks** → **Add webhook**
 2. Set an expiry date per your organization's policy
 3. **Copy the webhook URL immediately** — it is shown only once
-4. Store it as a Secret-type Dataverse environment variable (see Section 9) — never hardcode it in the flow
+4. Store it as a Secret-type Dataverse environment variable (see Section 10) — never hardcode it in the flow
 
 ---
 
-## 9. Secrets in Power Automate Flows
+## 10. Secrets in Power Automate Flows
 
 Never hardcode Client ID, Client Secret, Tenant ID, or webhook URLs directly in flow actions. Use Dataverse environment variables instead.
 
@@ -167,14 +177,14 @@ Never hardcode Client ID, Client Secret, Tenant ID, or webhook URLs directly in 
 | SPN App ID | `nh_SpnAppId` | Secret |
 
 **Retrieving Secret-type variables:**
-Dataverse connector → **Perform an unbound action** → Action Name `RetrieveEnvironmentVariableSecretValue`, passing the schema name as `EnvironmentVariableName`. This requires Section 0 (resource provider registration) and Section 2 (Key Vault access for the Dataverse service principal) to already be in place.
+Dataverse connector → **Perform an unbound action** → Action Name `RetrieveEnvironmentVariableSecretValue`, passing the schema name as `EnvironmentVariableName`. This requires Section 0 (resource provider registration) and Section 3 (Key Vault access for the Dataverse service principal) to already be in place.
 
 **Additional steps:**
 - Enable **Secure Inputs/Outputs** (action Settings tab) on any HTTP action that references a secret, even indirectly, so values don't appear in run history.
 
 ---
 
-## 10. Power Automate Flow — Token Acquisition for ARM Calls (GCC moderate)
+## 11. Power Automate Flow — Token Acquisition for ARM Calls (GCC moderate)
 
 If the flow calls the ARM REST API (job status/output polling), acquire the token manually rather than relying on the built-in **Active Directory OAuth** authentication type, unless you've confirmed it works with commercial endpoints for your tenant. Since GCC moderate uses commercial Entra ID/ARM, use:
 
@@ -190,14 +200,14 @@ Subsequent ARM calls (job status, job output) use:
 
 ---
 
-## 11. Power Automate Flow — HTTP Action to Trigger the Webhook
+## 12. Power Automate Flow — HTTP Action to Trigger the Webhook
 
 The flow must call the webhook using the **HTTP** action (not the Azure Automation connector, which is not supported in GCC).
 
 | Setting | Value |
 |---|---|
 | Method | POST |
-| URI | webhook URL, retrieved from `nh_WebhookUrl` (see Section 9) |
+| URI | webhook URL, retrieved from `nh_WebhookUrl` (see Section 10) |
 | Headers | `Content-Type: application/json` |
 | Body | `{}` (or environment payload, depending on runbook version) |
 
@@ -205,7 +215,7 @@ The flow must call the webhook using the **HTTP** action (not the Azure Automati
 
 ---
 
-## 12. Do Until Loop Logic (Job Status Polling)
+## 13. Do Until Loop Logic (Job Status Polling)
 
 If polling for job completion, the **Loop until** condition must be:
 
