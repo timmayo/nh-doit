@@ -162,7 +162,7 @@ Without this, polling fails with: `does not have authorization to perform action
 > **Prerequisite:** You should already have a Runbook created (Runbook type is **PowerShell**) using your naming convention (e.g. `rb-nh-doit`).
 
 1. Open the Runbook → **Edit in portal** and paste in the contents of `3-runbook.ps1` and **Publish**
-2. Runbook → **Resources → Webhooks** → **Add webhook**
+2. Runbook → **Resources → Webhooks** → **Add webhook** following your naming convention (e.g. `wh-nh-doit`)
 3. Set an expiry date per your organization's policy
 4. **Copy the webhook URL immediately** — it is shown only once
 5. Update the `scrt-nh-doit-webhook` secret in the Key Vault (see Section 5) — never hardcode it in the flow
