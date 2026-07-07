@@ -74,7 +74,16 @@ Name it following your naming convention (e.g. `aa-nh-doit`).
 
 ## 5. Key Vault Access — Three Separate Grants Required
 
-Create a Key Vault using your naming convention (e.g. `kv-nh-doit`) to store the SPN client secret. Three different identities need access to it, and each is granted separately. Missing any one of these produces a different failure at a different stage, so confirm all three.
+> **Prerequisite:** Before continuing, you should already have a Key Vault created using your naming convention (e.g. `kv-nh-doit`) with the following secrets:
+> - `scrt-nh-doit-automation-account`
+> - `scrt-nh-doit-client-id`
+> - `scrt-nh-doit-client-secret`
+> - `scrt-nh-doit-resource-group`
+> - `scrt-nh-doit-subscription-id`
+> - `scrt-nh-doit-tenant-id`
+> - `scrt-nh-doit-webhook` (placeholder value for now — updated once the webhook is generated in Section 10)
+
+Three different identities need access to this Key Vault, and each is granted separately. Missing any one of these produces a different failure at a different stage, so confirm all three.
 
 | Who needs access | Role | Where to grant it |
 |---|---|---|
