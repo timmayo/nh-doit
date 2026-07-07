@@ -1,6 +1,6 @@
-# Azure Automation Runbook – Prerequisites
+# Azure Automation Runbook – Setup
 
-This document describes everything that must be in place before the runbook and its triggering Power Automate flow can be created and run.
+This document describes the full setup sequence — from registering the SPN in Power Platform through configuring the Azure Automation Runbook and the Power Automate flow that triggers it.
 
 ---
 
@@ -36,23 +36,19 @@ flowchart TD
 
 ---
 
-## 0. Register Microsoft.PowerPlatform Resource Provider
+## 1. Register the SPN as a Power Platform Management Application
 
-Before creating any Secret-type environment variable in Power Platform, register the `Microsoft.PowerPlatform` resource provider on the Azure subscription that hosts the Key Vault.
-
-1. Azure portal → your subscription → **Resource providers**
-2. Search for `Microsoft.PowerPlatform`
-3. If status is not **Registered**, select it and click **Register**
-
-> **Important:** If this provider is registered *after* an environment variable is created, the environment variable can appear to save successfully but silently fail to resolve the secret at runtime, producing an error like `Value cannot be null. Parameter name: input` when the flow runs. If you hit this error and later register the provider, delete and recreate the environment variable — re-registering the provider alone does not fix an already-broken reference.
-
-Also confirm the Key Vault's networking allows access:
-- **Networking → Allow public access from all networks**, or
-- If using a firewall, explicitly allow Power Platform IP ranges (Power Platform is not covered by "Trusted Services Only")
+Run `1-register-management-app.ps1` interactively, signed in as a human Power Platform Administrator. This is a one-time step and cannot be run by the SPN itself.
 
 ---
 
-## 1. Resource Group
+## 2. Add the SPN as a Dataverse Application User
+
+Run `2-add-app-user.ps1` interactively, signed in as a human Power Platform Administrator. Adds the SPN as an Application User with the System Administrator role in each target environment.
+
+---
+
+## 3. Resource Group
 
 Create (or identify) an Azure Resource Group to contain the Automation Account and Key Vault used by this solution.
 
@@ -62,7 +58,7 @@ Create (or identify) an Azure Resource Group to contain the Automation Account a
 
 ---
 
-## 2. Azure Automation Account
+## 4. Azure Automation Account
 
 Create an Azure Automation Account in the Resource Group created above.
 
@@ -76,7 +72,7 @@ Name it following your naming convention (e.g. `aa-nh-doit`).
 
 ---
 
-## 3. Key Vault Access — Three Separate Grants Required
+## 5. Key Vault Access — Three Separate Grants Required
 
 A single Key Vault is used to store the SPN client secret. Three different identities need access to it, and each is granted separately. Missing any one of these produces a different failure at a different stage, so confirm all three.
 
@@ -94,19 +90,19 @@ In the role assignment "Select members" search box, search **"Dataverse"**. Do n
 
 ---
 
-## 4. Required PowerShell Modules (Automation Account)
+## 6. Required PowerShell Modules (Automation Account)
 
 Install these modules in the Automation Account under **Modules → Add a module → Browse the gallery**:
 
 | Module | Purpose |
 |---|---|
-| `Microsoft.PowerApps.Administration.PowerShell` | Registering the management application; PAC CLI is a separate executable (see Section 7) |
+| `Microsoft.PowerApps.Administration.PowerShell` | Registering the management application; PAC CLI is a separate executable (see Section 8) |
 | `Az.Accounts` | `Connect-AzAccount -Identity` for managed identity auth |
 | `Az.KeyVault` | `Get-AzKeyVaultSecret` |
 
 ---
 
-## 5. Automation Account Variables
+## 7. Automation Account Variables
 
 Create the following under **Shared Resources → Variables**:
 
@@ -121,18 +117,7 @@ The client secret itself is never stored as an Automation variable — it is ret
 
 ---
 
-## 6. SPN Prerequisites (Power Platform side)
-
-| Prerequisite | Script | Who runs it |
-|---|---|---|
-| Registered as a Power Platform management application | `1-register-management-app.ps1` | Human Power Platform Administrator, run once |
-| Added as a Dataverse Application User with System Administrator role in each target environment | `2-add-app-user.ps1` | Human Power Platform Administrator, run once per environment set |
-
-Both scripts use `Add-PowerAppsAccount -Endpoint usgov` and `pac auth create --cloud UsGov` — these are correct for GCC moderate's Power Platform/Dataverse layer, despite the Entra/ARM layer being commercial (see the cloud clarification note above).
-
----
-
-## 7. PAC CLI in the Runbook
+## 8. PAC CLI in the Runbook
 
 PAC CLI is a standalone executable, not a PowerShell module, and is not available in the Azure Automation sandbox by default. The runbook installs it at runtime:
 
@@ -143,7 +128,7 @@ This adds roughly 1–2 minutes to each runbook execution. For frequent or produ
 
 ---
 
-## 8. SPN Role Assignment on the Automation Account (for job status polling)
+## 9. SPN Role Assignment on the Automation Account (for job status polling)
 
 If the Power Automate flow polls the runbook's job status/output via the ARM REST API (rather than only firing the webhook and walking away), the SPN needs an RBAC role on the Automation Account itself — this is separate from anything configured in Power Platform or Key Vault.
 
@@ -159,16 +144,32 @@ Without this, polling fails with: `does not have authorization to perform action
 
 ---
 
-## 9. Webhook
+## 10. Webhook
 
 1. Runbook → **Webhooks** → **Add webhook**
 2. Set an expiry date per your organization's policy
 3. **Copy the webhook URL immediately** — it is shown only once
-4. Store it as a Secret-type Dataverse environment variable (see Section 10) — never hardcode it in the flow
+4. Store it as a Secret-type Dataverse environment variable (see Section 12) — never hardcode it in the flow
 
 ---
 
-## 10. Secrets in Power Automate Flows
+## 11. Register Microsoft.PowerPlatform Resource Provider
+
+Before creating any Secret-type environment variable in Power Platform, register the `Microsoft.PowerPlatform` resource provider on the Azure subscription that hosts the Key Vault.
+
+1. Azure portal → your subscription → **Resource providers**
+2. Search for `Microsoft.PowerPlatform`
+3. If status is not **Registered**, select it and click **Register**
+
+> **Important:** If this provider is registered *after* an environment variable is created, the environment variable can appear to save successfully but silently fail to resolve the secret at runtime, producing an error like `Value cannot be null. Parameter name: input` when the flow runs. If you hit this error and later register the provider, delete and recreate the environment variable — re-registering the provider alone does not fix an already-broken reference.
+
+Also confirm the Key Vault's networking allows access:
+- **Networking → Allow public access from all networks**, or
+- If using a firewall, explicitly allow Power Platform IP ranges (Power Platform is not covered by "Trusted Services Only")
+
+---
+
+## 12. Secrets in Power Automate Flows
 
 Never hardcode Client ID, Client Secret, Tenant ID, or webhook URLs directly in flow actions. Use Dataverse environment variables instead.
 
@@ -179,14 +180,14 @@ Never hardcode Client ID, Client Secret, Tenant ID, or webhook URLs directly in 
 | SPN App ID | `nh_SpnAppId` | Secret |
 
 **Retrieving Secret-type variables:**
-Dataverse connector → **Perform an unbound action** → Action Name `RetrieveEnvironmentVariableSecretValue`, passing the schema name as `EnvironmentVariableName`. This requires Section 0 (resource provider registration) and Section 3 (Key Vault access for the Dataverse service principal) to already be in place.
+Dataverse connector → **Perform an unbound action** → Action Name `RetrieveEnvironmentVariableSecretValue`, passing the schema name as `EnvironmentVariableName`. This requires Section 11 (resource provider registration) and Section 5 (Key Vault access for the Dataverse service principal) to already be in place.
 
 **Additional steps:**
 - Enable **Secure Inputs/Outputs** (action Settings tab) on any HTTP action that references a secret, even indirectly, so values don't appear in run history.
 
 ---
 
-## 11. Power Automate Flow — Token Acquisition for ARM Calls (GCC moderate)
+## 13. Power Automate Flow — Token Acquisition for ARM Calls (GCC moderate)
 
 If the flow calls the ARM REST API (job status/output polling), acquire the token manually rather than relying on the built-in **Active Directory OAuth** authentication type, unless you've confirmed it works with commercial endpoints for your tenant. Since GCC moderate uses commercial Entra ID/ARM, use:
 
@@ -202,14 +203,14 @@ Subsequent ARM calls (job status, job output) use:
 
 ---
 
-## 12. Power Automate Flow — HTTP Action to Trigger the Webhook
+## 14. Power Automate Flow — HTTP Action to Trigger the Webhook
 
 The flow must call the webhook using the **HTTP** action (not the Azure Automation connector, which is not supported in GCC).
 
 | Setting | Value |
 |---|---|
 | Method | POST |
-| URI | webhook URL, retrieved from `nh_WebhookUrl` (see Section 10) |
+| URI | webhook URL, retrieved from `nh_WebhookUrl` (see Section 12) |
 | Headers | `Content-Type: application/json` |
 | Body | `{}` (or environment payload, depending on runbook version) |
 
@@ -217,7 +218,7 @@ The flow must call the webhook using the **HTTP** action (not the Azure Automati
 
 ---
 
-## 13. Do Until Loop Logic (Job Status Polling)
+## 15. Do Until Loop Logic (Job Status Polling)
 
 If polling for job completion, the **Loop until** condition must be:
 
@@ -229,16 +230,17 @@ Not "is not equal to" — a Do Until loop runs until the condition becomes **tru
 
 ## Summary Checklist
 
-- [ ] `Microsoft.PowerPlatform` resource provider registered on the subscription
-- [ ] Key Vault networking allows Power Platform access
+- [ ] SPN registered as Power Platform management application (`1-register-management-app.ps1`)
+- [ ] SPN added as Dataverse Application User in each target environment (`2-add-app-user.ps1`)
+- [ ] Resource Group created
 - [ ] Azure Automation Account created (PowerShell 7.2, system-assigned managed identity)
 - [ ] Key Vault Secrets User granted to: Automation Account managed identity, Dataverse service principal, your own user
 - [ ] Required PowerShell modules installed in Automation Account
 - [ ] Automation Account variables created (`TenantId`, `AppId`, `KeyVaultName`, `KeyVaultSecretName`)
-- [ ] SPN registered as Power Platform management application (`1-register-management-app.ps1`)
-- [ ] SPN added as Dataverse Application User in each target environment (`2-add-app-user.ps1`)
 - [ ] Automation Job Operator role granted to SPN on the Automation Account (for job polling)
 - [ ] Runbook created (`3-runbook.ps1` pasted in) and webhook generated
+- [ ] `Microsoft.PowerPlatform` resource provider registered on the subscription
+- [ ] Key Vault networking allows Power Platform access
 - [ ] Webhook URL stored as Secret-type environment variable (`nh_WebhookUrl`)
 - [ ] SPN Client Secret and App ID stored as environment variables (`nh_SpnClientSecret`, `nh_SpnAppId`)
 - [ ] Power Automate HTTP action configured to trigger webhook
